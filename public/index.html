@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<video muted width="640px" height="360px" id="local_video"></video>
+</body>
+
+<script type="text/javascript" src="./js/socket.io-client/dist/socket.io.js"></script>
+<script type="text/javascript" src="./js/srs/srs.sdk.js"></script>
+<script>
+
+    function connect() {
+        const socket = io("https://192.168.2.139:8089/srs", {
+            withCredentials: false
+        });
+
+        // client-side
+        socket.on("connect", () => {
+            console.log("connect:" + socket.id); // x8WIv7-mJelg7on_ALbx
+            socket.emit("join_room", "0101")
+        });
+
+        socket.on("disconnect", () => {
+            console.log("disconnect:" + socket.id); // undefined
+        });
+        socket.on("connect_error", () => {
+            console.log("connect_error:" + socket.id); // undefined
+        });
+
+    }
+
+    let sdk = null;
+
+    function publish() {
+        if (sdk) {
+            sdk.close()
+        }
+        sdk = SrsRtcPublisherAsync()
+        const localVideo = document.getElementById("local_video");
+        localVideo.srcObject = sdk.stream
+
+        sdk.publish("webrtc://192.168.2.88/live/livestream").then(function (session) {
+
+        }).catch(function (reason) {
+            sdk.close();
+            console.error(reason);
+        });
+
+    }
+
+    connect()
+    var query = parse_query_string();
+    srs_init_rtc("#txt_url", query);
+    publish()
+</script>
+</html>
