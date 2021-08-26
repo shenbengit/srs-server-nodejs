@@ -60,7 +60,6 @@ function SrsRtcPublisherAsync() {
         await self.pc.setLocalDescription(offer);
         var session = await new Promise(function (resolve, reject) {
             // @see https://github.com/rtcdn/rtcdn-draft
-            conf.apiUrl="https://192.168.2.88:1990/rtc/v1/publish/"
             var data = {
                 api: conf.apiUrl, tid: conf.tid, streamurl: conf.streamUrl,
                 clientip: null, sdp: offer.sdp

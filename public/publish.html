@@ -3,7 +3,7 @@
 <head>
     <title>SRS</title>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"/>
     <style>
         body {
             padding-top: 30px;
@@ -13,31 +13,20 @@
 
 </head>
 <body>
+房间号：
+<input id="room_id" type="text" name="firstname">
 <div class="container">
     <div class="form-inline">
         URL:
-        <input type="text" id="txt_url" class="input-xxlarge" value="">
-        <button class="btn btn-primary" id="btn_publish">开始推流</button>
+        <input type="text" id="txt_url" class="input-xxlarge" value="webrtc://192.168.2.88:1990/web/livestream1">
+        <button class="btn btn-primary" id="btn_publish">进入房间</button>
     </div>
 
     <label></label>
     <video id="rtc_media_player" width="320" autoplay muted></video>
-
-    <label></label>
-    SessionID: <span id='sessionid'></span>
-
-    <label></label>
-    Audio: <span id='acodecs'></span><br/>
-    Video: <span id='vcodecs'></span>
-
-    <label></label>
-    Simulator: <a href='#' id='simulator-drop'>Drop</a>
-
-    <footer>
-        <p></p>
-        <p><a href="https://github.com/ossrs/srs">SRS Team &copy; 2020</a></p>
-    </footer>
 </div>
+
+<video id="rtc_media_player_push" width="320" autoplay></video>
 
 </body>
 <script type="text/javascript" src="js/srs/jquery-1.10.2.min.js"></script>
@@ -45,52 +34,106 @@
 <script type="text/javascript" src="js/srs/srs.sdk.js"></script>
 <script type="text/javascript" src="js/srs/winlin.utility.js"></script>
 <script type="text/javascript" src="js/srs/srs.page.js"></script>
+<script type="text/javascript" src="./js/socket.io-client/dist/socket.io.js"></script>
+
 <script type="text/javascript">
+    var pushSdk = null
+
+    function startPush(url) {
+        if (pushSdk) {
+            pushSdk.close();
+        }
+        pushSdk = new SrsRtcPlayerAsync();
+        $('#rtc_media_player_push').prop('srcObject', pushSdk.stream);
+        pushSdk.play(url).then(function (session) {
+            console.log("拉流成功：", session)
+        }).catch(function (reason) {
+            pushSdk.close();
+            $('#rtc_media_player_push').hide();
+            console.error(reason);
+        });
+    }
+
+    let socket = null;
+
+    function connect() {
+        socket = io("https://192.168.2.139:8089/srs", {
+            withCredentials: false
+        });
+
+        // client-side
+        socket.on("connect", () => {
+            console.log("connect:" + socket.id); // x8WIv7-mJelg7on_ALbx
+        });
+
+        socket.on("disconnect", () => {
+            console.log("disconnect:" + socket.id); // undefined
+        });
+        socket.on("connect_error", () => {
+            console.log("connect_error:" + socket.id); // undefined
+        });
+        socket.on("joined", () => {
+            console.log("disconnect:" + socket.id);
+        })
+        socket.on("push_webrtc", (url) => {
+            console.log("push_webrtc:", url);
+            if (url) {
+                startPush(url)
+            }
+        })
+        socket.on("in_room_other_client", (urls) => {
+            console.log("in_room_other_client:" + urls[0]);
+            if (urls) {
+                if (urls.length > 0) {
+                    startPush(urls[0])
+                }
+            }
+        })
+
+    }
+
+    connect()
+
     $(function () {
-        var sdk = null; // Global handler to do cleanup when republishing.
+        var pullSdk = null; // Global handler to do cleanup when republishing.
         var startPublish = function () {
+            const roomId = $("#room_id").val();
+            socket.emit("join_room", roomId)
+
             $('#rtc_media_player').show();
 
             // Close PC when user replay.
-            if (sdk) {
-                sdk.close();
+            if (pullSdk) {
+                pullSdk.close();
             }
-            sdk = new SrsRtcPublisherAsync();
+            pullSdk = new SrsRtcPublisherAsync();
 
             // User should set the stream when publish is done, @see https://webrtc.org/getting-started/media-devices
             // However SRS SDK provides a consist API like https://webrtc.org/getting-started/remote-streams
-            $('#rtc_media_player').prop('srcObject', sdk.stream);
+            $('#rtc_media_player').prop('srcObject', pullSdk.stream);
             // Optional callback, SDK will add track to stream.
             // sdk.ontrack = function (event) { console.log('Got track', event); sdk.stream.addTrack(event.track); };
 
             // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/WebRTC_codecs#getting_the_supported_codecs
-            sdk.pc.onicegatheringstatechange = function (event) {
-                if (sdk.pc.iceGatheringState === "complete") {
-                    $('#acodecs').html(SrsRtcFormatSenders(sdk.pc.getSenders(), "audio"));
-                    $('#vcodecs').html(SrsRtcFormatSenders(sdk.pc.getSenders(), "video"));
+            pullSdk.pc.onicegatheringstatechange = function (event) {
+                if (pullSdk.pc.iceGatheringState === "complete") {
+                    console.log("pullSdk.pc.iceGatheringState === complete")
                 }
             };
 
             // For example: webrtc://r.ossrs.net/live/livestream
             var url = $("#txt_url").val();
-            sdk.publish(url).then(function (session) {
-                $('#sessionid').html(session.sessionid);
-                $('#simulator-drop').attr('href', session.simulator + '?drop=1&username=' + session.sessionid);
+            pullSdk.publish(url).then(function (session) {
+                socket.emit("pull_webrtc", roomId, url)
             }).catch(function (reason) {
-                sdk.close();
+                pullSdk.close();
                 $('#rtc_media_player').hide();
                 console.error(reason);
             });
         };
 
-        $('#rtc_media_player').hide();
-        var query = parse_query_string();
-        srs_init_rtc("#txt_url", query);
-
         $("#btn_publish").click(startPublish);
-        if (query.autostart === 'true') {
-            startPublish();
-        }
+
     });
 </script>
 </html>

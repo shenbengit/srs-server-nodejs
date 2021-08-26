@@ -1,86 +1,8 @@
-// let socket_io = require("socket.server");
-// let http = require("http");
-// let https = require("https");
-// let express = require('express');
-// let log4js = require('log4js');
-//
-// let app = express();
-//
-// let http_server = http.createServer(app);
-// http_server.listen(8898, "0.0.0.0")
-//
-// socket_io.listen()
-
-// const engine = require('engine.server');
-// const server = engine.listen(8089);
-//
-// server.on('connection', socket => {
-//     socket.send('utf 8 string');
-//     socket.send(Buffer.from([0, 1, 2, 3, 4, 5])); // binary datano
-// });
-// const fs = require('fs');
-// const express = require("express");
-// const path = require("path")
-// const url = require("url")
-//
-// let app = express();
-// const serveIndex = require('serve-index');
-// app.use(serveIndex('./html'));
-// app.use(express.static('./html'));
-// const root = path.resolve()
-//
-// // 创建服务器
-// var sever = http.createServer(function (request, response) {
-//     var pathname = url.parse(request.url).pathname;
-//     var filepath = path.join(root, pathname);
-//     // 获取文件状态
-//     fs.stat(filepath, function (err, stats) {
-//         if (err) {
-//             // 发送404响应
-//             response.writeHead(404);
-//             response.end("404 Not Found.");
-//         } else {
-//             // 发送200响应
-//             response.writeHead(200);
-//             // response是一个writeStream对象，fs读取html后，可以用pipe方法直接写入
-//             fs.createReadStream(filepath).pipe(response);
-//         }
-//     });
-// });
-// sever.listen(8080);
-
-
-// const http = require("http"),
-//     fs = require("fs"),
-//     path = require("path"),
-//     url = require("url");
-//
-// var root = path.resolve();
-//
-// var sever = http.createServer(function(request,response){
-//     var pathname = url.parse(request.url).pathname;
-//     var filepath = path.join(root,pathname);
-//     // 获取文件状态
-//     fs.stat(filepath,function(err,stats){
-//         if(err){
-//             // 发送404响应
-//             response.writeHead(404);
-//             response.end("404 Not Found.");
-//         }else{
-//             // 发送200响应
-//             response.writeHead(200);
-//             // response是一个writeStream对象，fs读取html后，可以用pipe方法直接写入
-//             fs.createReadStream(filepath).pipe(response);
-//         }
-//     });
-// });
-// sever.listen(8081);
-
 const fs = require('fs');
 
 const options = {
-    key: fs.readFileSync('./cert/1557605_www.learningrtc.cn.key'),
-    cert: fs.readFileSync('./cert/1557605_www.learningrtc.cn.pem')
+    key: fs.readFileSync('./cert/server.key'),
+    cert: fs.readFileSync('./cert/server.pem')
 }
 const express = require('express')
 const app = express()
