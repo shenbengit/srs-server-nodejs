@@ -7,18 +7,33 @@ const options = {
 const express = require('express')
 const app = express()
 const serveIndex = require('serve-index');
+const uuid = require("uuid");
 
-app.use(serveIndex('./public'));
+function serveIndexFilter(filename, index, list, path) {
+    console.log("serveIndexFilter->", filename, index, list, path)
+    const fileExtension = filename.split('.').pop().toLowerCase()
+    if (fileExtension === "html") {
+        return filename
+    } else {
+        return null
+    }
+}
+
+app.use(serveIndex('./public', {
+    icons: true,
+    filter: serveIndexFilter
+}));
 app.use(express.static('./public'));
 const server = require('https').createServer(options, app);
 
 const ioServer = require('socket.io')(server, {
     cors: {
-        origin: "https://localhost:8089",
+        // origin: "https://localhost:8089",
         // methods: ["GET", "POST"],
         credentials: false
     }
 });
+
 
 const socketServer = ioServer.of("/srs")
 
@@ -28,7 +43,7 @@ socketServer.on('connection', client => {
     console.log("connection:" + client.id)
     // client.emit("test_list", ["1", "2"])
     client.on('join_room', roomId => {
-        console.log("join_room-roomId:" + roomId,client.id)
+        console.log("join_room-roomId:" + roomId, client.id)
 
         const set = socketServer.adapter.rooms.get(roomId)
         if (set && set.size > 0) {
