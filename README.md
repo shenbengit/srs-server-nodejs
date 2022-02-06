@@ -1,4 +1,6 @@
 # srs-server-nodejs
+> 音视频通话信令服务完整示例移步[srs-rtc-server](https://github.com/shenbengit/srs-rtc-server)。    
+
 多端通话信令服务器，搭配Android demo[p2p](https://github.com/shenbengit/WebRTC-SRS/tree/master/p2p)。
 
 ```shell
